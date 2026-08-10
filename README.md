@@ -38,7 +38,7 @@ Flags, options and parameters:
 ### Getting started
 
 ```bash
-# one-time setup: checks/installs pandoc & typst, creates .env + template
+# one-time setup: checks/installs pandoc & typst, creates a default .env
 mark-typst init
 
 # convert doc.md to doc.pdf (same folder)
@@ -75,7 +75,7 @@ See [docs/examples/doc.md](docs/examples/doc.md) → [docs/examples/doc.pdf](doc
 | `HEADER_LEFT` / `HEADER_CENTER` / `HEADER_RIGHT` | *(empty)* | text shown at the top of every page (left / center / right aligned) |
 | `FOOTER_LEFT` / `FOOTER_CENTER` / `FOOTER_RIGHT` | *(empty)* | text shown at the bottom of every page (left / center / right aligned) |
 | `FONT_PATH`    | *(empty)*                 | extra folder with `.ttf`/`.otf` font files     |
-| `TEMPLATE`     | *(empty)*                 | pandoc→typst template to use — empty uses the template installed with mark-typst (see [Template](#template)) |
+| `TEMPLATE`     | *(empty)*                 | *advanced* — path to your own template; empty uses the one shipped with mark-typst (see [Template](#template)) |
 
 ### Fonts
 
@@ -110,18 +110,7 @@ FOOTER_RIGHT=Last update on {generated_at}
 
 ### Template
 
-`mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup.
-
-You don't need a copy in every document folder. `build` resolves the template in this order:
-
-1. the `TEMPLATE` path from `.env`, if set (relative to the document folder, or absolute)
-2. a local `mark-typst.template.typ` in the current folder, if present (e.g. created by `mark-typst init`)
-3. otherwise the template that ships with mark-typst — used **in place** from its install folder, so nothing is copied into your document folder
-
-So the default is a single shared template. Only when you want per-document styling do you keep a local copy — run `mark-typst init` (or drop a `mark-typst.template.typ` next to your document), and it is picked up automatically. On every `build`:
-
-- no `.env` yet? one is created with default settings
-- a *local* template older than the one in the mark-typst install folder? it is refreshed (the previous version is kept as `mark-typst.template.typ.bak`, so local customizations are never lost silently). The shared install-folder template is never touched.
+`mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup. It is the **read-only styling engine** shipped with mark-typst — all styling is controlled through your `.env`, so you never edit or copy the template yourself. Every `build` uses the shared template in place from the mark-typst install folder; nothing is written into your document folder except the PDF (and a default `.env` the first time, if you don't have one).
 
 The template styles:
 
@@ -133,7 +122,7 @@ The template styles:
 - optional logo in the top-right corner
 - optional running header/footer with per-side alignment and page numbers
 
-Edit it freely — it is yours after `init`. Re-running `init` never overwrites existing files unless you pass `--FORCE` (which also resets `.env`).
+To restyle beyond what `.env` exposes, either edit the template in the mark-typst install folder (it applies to every document), or copy it somewhere, adapt it, and point `TEMPLATE` at your copy in `.env`.
 
 ## Markdown support
 

@@ -106,7 +106,7 @@ function Script:main() {
 
   case "${action,,}" in # ${action,,} = lowercase $action
   init)
-    #TIP: use «$script_prefix init» to check/install pandoc & typst and create default config files (.env + template)
+    #TIP: use «$script_prefix init» to check/install pandoc & typst and create a default .env config file
     #TIP:> $script_prefix init
     do_init
     ;;
@@ -162,13 +162,8 @@ function do_init() {
     IO:success "created: .env"
   fi
 
-  local template="${TEMPLATE:-mark-typst.template.typ}"
-  if [[ -f "$template" ]] && ((FORCE == 0)); then
-    IO:alert "$template already exists - use --FORCE to overwrite"
-  else
-    Template:default >"$template"
-    IO:success "created: $template"
-  fi
+  # the .typ template is the read-only styling engine shipped with mark-typst; all styling
+  # is controlled through .env, so no template is copied into the document folder
   IO:print "$script_prefix initialized - edit .env to customize font/logo settings"
 }
 
@@ -182,7 +177,7 @@ function do_build() {
   local template
   template="$(Build:template)"
   IO:debug "using template: $template"
-  Build:refresh_config "$template"
+  Build:ensure_env
 
   local folder base
   folder=$(dirname "$input")
@@ -257,52 +252,32 @@ function do_build() {
 }
 
 function Build:template() {
-  # Build:template : decide which pandoc -> typst template to use, without copying
-  # anything into the document folder by default:
-  #   1. $TEMPLATE from .env, if set (path, relative to the document folder or absolute)
-  #   2. a local mark-typst.template.typ in the current folder (e.g. from 'mark-typst init')
-  #   3. the template installed next to mark-typst.sh (the repo folder) - used in place
-  local name="mark-typst.template.typ"
-  if [[ -n "${TEMPLATE:-}" ]]; then
-    printf '%s' "$TEMPLATE"
-  elif [[ -f "$name" ]]; then
-    printf '%s' "$name"
+  # Build:template : which pandoc -> typst template to use. Styling is driven entirely by
+  # .env, so the .typ template is a read-only, shared styling engine - never copied into or
+  # edited inside a document folder:
+  #   - $TEMPLATE from .env, if set : your own template file (advanced, rarely needed)
+  #   - otherwise                   : the template installed with mark-typst, used in place
+  [[ -n "${TEMPLATE:-}" ]] && { printf '%s' "$TEMPLATE"; return 0; }
+
+  local installed="$script_install_folder/mark-typst.template.typ"
+  if [[ -f "$installed" ]]; then
+    printf '%s' "$installed"
   else
-    printf '%s' "$script_install_folder/$name"
+    # install is missing its template (unusual) - fall back to the built-in default
+    local fallback
+    fallback="$(Os:tempfile typ)"
+    Template:default >"$fallback"
+    printf '%s' "$fallback"
   fi
 }
 
-function Build:refresh_config() {
-  # Build:refresh_config <template> : make sure the current folder has a .env and, when a
-  # local/custom template is used, keep it up to date with the one in the mark-typst repo
-  local template="$1"
-  local reference_template="$script_install_folder/mark-typst.template.typ"
-
-  # no .env in this folder yet? create one with default settings
-  # (defaults were already active for this run, so no need to reload)
+function Build:ensure_env() {
+  # Build:ensure_env : make sure the document folder has a .env with default settings
+  # (all styling lives here; the .typ template needs no per-folder copy)
   if [[ ! -f .env && ! -f ".$script_prefix.env" && ! -f "$script_prefix.env" ]]; then
     Env:example >.env
     IO:success "created: .env (default settings - edit to customize)"
   fi
-
-  # using the template installed with mark-typst directly? nothing to create, copy or refresh
-  [[ "$template" == "$reference_template" ]] && return 0
-
-  # a local/custom template that doesn't exist yet? create it from the default
-  if [[ ! -f "$template" ]]; then
-    Template:default >"$template"
-    IO:success "created: $template"
-    return 0
-  fi
-
-  # replace the local template when the one in the mark-typst repo is more recent
-  [[ ! -f "$reference_template" ]] && return 0
-  if [[ "$reference_template" -nt "$template" ]] && ! cmp -s "$reference_template" "$template"; then
-    cp "$template" "$template.bak"
-    cp "$reference_template" "$template"
-    IO:alert "template [$template] replaced by newer version (previous version: $template.bak)"
-  fi
-  return 0
 }
 
 function Build:header_footer() {
@@ -391,9 +366,8 @@ FOOTER_CENTER=
 FOOTER_RIGHT=
 # extra folder with .ttf/.otf fonts (optional)
 FONT_PATH=
-# pandoc -> typst template. Leave empty to use the template installed with mark-typst
-# (nothing is copied into this folder). A local mark-typst.template.typ - e.g. created by
-# 'mark-typst init' - is used automatically. Set a path to force a specific template.
+# advanced: path to your own pandoc -> typst template. Leave empty to use the read-only
+# template that ships with mark-typst (all styling is controlled through the settings above).
 TEMPLATE=
 ENV_DEFAULTS
 }
