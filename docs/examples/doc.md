@@ -6,8 +6,8 @@ title: MarkTypst Sample Document
 
 ## Typography
 
-Body text is set in **Georgia** (serif), headers in **Helvetica Neue Bold**
-(sans-serif) — both standard macOS fonts; swap in any installed font (e.g. from
+Body text is set in **Georgia** (serif), headers in **Impact** (sans-serif) —
+both standard macOS fonts; swap in any installed font (e.g. from
 [Google Fonts](https://fonts.google.com)) via `.env`. You can combine *italic*,
 **bold**, ***bold italic***, `inline code`, ~~strikethrough~~ and
 footnotes[^1] freely.
@@ -37,7 +37,7 @@ mark-typst build doc.md  # → doc.pdf in the same folder
 | Setting     | .env variable  | Default        |
 |-------------|----------------|----------------|
 | Body font   | `FONT_BODY`    | Georgia        |
-| Header font | `FONT_HEADERS` | Helvetica Neue |
+| Header font | `FONT_HEADERS` | Impact         |
 | Font size   | `FONT_SIZE`    | 11pt           |
 | Paper       | `PAPER_SIZE`   | a4             |
 | Logo        | `LOGO`         | *(empty)*      |

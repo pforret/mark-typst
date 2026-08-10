@@ -83,6 +83,7 @@ flag|h|help|show usage
 flag|Q|QUIET|no output
 flag|V|VERBOSE|also show debug messages
 flag|f|FORCE|do not ask for confirmation (always yes)
+flag|O|OPEN|open the PDF after a successful build
 option|L|LOG_DIR|folder for log files |$HOME/log/$script_prefix
 option|T|TMP_DIR|folder for temp files|/tmp/$script_prefix
 choice|1|action|action to perform|init,build,check,env,update
@@ -197,20 +198,29 @@ function do_build() {
     -s -o "$typ_file"
     --template="$template"
     -V "mainfont=${FONT_BODY:-Georgia}"
-    -V "headerfont=${FONT_HEADERS:-Helvetica Neue}"
+    -V "headerfont=${FONT_HEADERS:-Impact}"
     -V "fontsize=${FONT_SIZE:-11pt}"
     -V "papersize=${PAPER_SIZE:-a4}"
     -V "margin=${MARGIN:-2.5cm}"
   )
   [[ -n "${LOGO:-}" ]] && pandoc_args+=(-V "logo=$LOGO" -V "logo-width=${LOGO_WIDTH:-3cm}")
-  IO:debug "pandoc $input ${pandoc_args[*]}"
+  IO:debug "pandoc $input $(printf '%s ' "${pandoc_args[@]}")"
   pandoc "$input" "${pandoc_args[@]}" || IO:die "pandoc conversion failed for [$input]"
 
   local typst_args=(compile --root /)
   [[ -n "${FONT_PATH:-}" ]] && typst_args+=(--font-path "$FONT_PATH")
-  IO:debug "typst ${typst_args[*]} $typ_file $output"
+  IO:debug "typst $(printf '%s ' "${typst_args[@]}")$typ_file $output"
   typst "${typst_args[@]}" "$typ_file" "$output" || IO:die "typst compilation failed for [$typ_file]"
   IO:success "created: $output"
+
+  if ((OPEN)); then
+    IO:debug "opening: $output"
+    case "$os_kernel" in
+    Darwin) open "$output" ;;
+    Linux*) xdg-open "$output" &>/dev/null ;;
+    *) IO:alert "cannot open [$output] automatically on $os_kernel" ;;
+    esac
+  fi
 }
 
 function Tool:install() {
@@ -240,7 +250,7 @@ function Env:example() {
 ### font families must be installed (check with 'typst fonts')
 ### e.g. Google Fonts via Homebrew: brew install --cask font-nunito
 FONT_BODY=Georgia
-FONT_HEADERS=Helvetica Neue
+FONT_HEADERS=Impact
 FONT_SIZE=11pt
 PAPER_SIZE=a4
 MARGIN=2.5cm
@@ -264,13 +274,24 @@ $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true)
-#show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Helvetica Neue$endif$",), weight: "bold")
+#show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
+#show raw: set text(size: 0.85em)
 #show raw.where(block: true): block.with(fill: luma(245), inset: 8pt, radius: 4pt, width: 100%)
+#set table(inset: 6pt, stroke: 0.5pt + luma(200))
+#set table.hline(stroke: 0.75pt + luma(160))
+#show quote.where(block: true): it => block(
+  width: 100%,
+  fill: luma(250),
+  stroke: (left: 3pt + rgb("#5b7c99")),
+  inset: (left: 14pt, right: 12pt, top: 10pt, bottom: 10pt),
+  radius: (top-right: 4pt, bottom-right: 4pt),
+  text(style: "italic", fill: luma(64), size: 0.95em)[#it.body]
+)
 $if(logo)$
 #align(right)[#image("$logo$", width: $if(logo-width)$$logo-width$$else$3cm$endif$)]
 $endif$
 $if(title)$
-#align(center)[#text(font: ("$if(headerfont)$$headerfont$$else$Helvetica Neue$endif$",), size: 1.6em, weight: "bold")[$title$]]
+#align(center)[#text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), size: 1.6em, weight: "bold")[$title$]]
 #v(1em)
 $endif$
 $body$
