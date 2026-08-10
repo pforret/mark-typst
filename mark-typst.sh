@@ -180,7 +180,7 @@ function do_build() {
   Os:require "typst"
 
   local template="${TEMPLATE:-mark-typst.template.typ}"
-  [[ ! -f "$template" ]] && IO:die "template [$template] not found - run «$script_prefix init» first"
+  Build:refresh_config "$template"
 
   local folder base
   folder=$(dirname "$input")
@@ -225,6 +225,34 @@ function do_build() {
     *) IO:alert "cannot open [$output] automatically on $os_kernel" ;;
     esac
   fi
+}
+
+function Build:refresh_config() {
+  # Build:refresh_config <template> : make sure the current folder has a .env and an up-to-date template
+  local template="$1"
+  local reference_template="$script_install_folder/mark-typst.template.typ"
+
+  # no .env in this folder yet? create one with default settings
+  # (defaults were already active for this run, so no need to reload)
+  if [[ ! -f .env && ! -f ".$script_prefix.env" && ! -f "$script_prefix.env" ]]; then
+    Env:example >.env
+    IO:success "created: .env (default settings - edit to customize)"
+  fi
+
+  if [[ ! -f "$template" ]]; then
+    Template:default >"$template"
+    IO:success "created: $template"
+    return 0
+  fi
+
+  # replace the local template when the one in the mark-typst repo is more recent
+  [[ ! -f "$reference_template" ]] && return 0
+  if [[ "$reference_template" -nt "$template" ]] && ! cmp -s "$reference_template" "$template"; then
+    cp "$template" "$template.bak"
+    cp "$reference_template" "$template"
+    IO:alert "template [$template] replaced by newer version (previous version: $template.bak)"
+  fi
+  return 0
 }
 
 function Tool:install() {

@@ -80,7 +80,15 @@ Typst uses the **font family name** (not the file name) of any font installed on
 
 ### Template
 
-`mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup. It styles:
+`mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup.
+
+Every `build` keeps the document folder self-sufficient:
+
+- no `.env` yet? one is created with default settings
+- no template yet? the default template is created
+- local template older than the one in the mark-typst repo? it is replaced (the previous version is kept as `mark-typst.template.typ.bak`, so local customizations are never lost silently)
+
+The template styles:
 
 - title (from YAML frontmatter `title:`) and headings in `FONT_HEADERS`, bold
 - every `##` (H2) section starts on a new page (assumes a single `#` H1 per document)
