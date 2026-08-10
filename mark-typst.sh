@@ -85,8 +85,9 @@ flag|V|VERBOSE|also show debug messages
 flag|f|FORCE|do not ask for confirmation (always yes)
 option|L|LOG_DIR|folder for log files |$HOME/log/$script_prefix
 option|T|TMP_DIR|folder for temp files|/tmp/$script_prefix
-choice|1|action|action to perform|action1,action2,check,env,update
-param|?|input|input file/text
+choice|1|action|action to perform|init,build,check,env,update
+param|?|input|input markdown file
+param|?|output|output PDF file (default: <input>.pdf)
 " -v -e '^#' -e '^\s*$'
 }
 
@@ -103,23 +104,17 @@ function Script:main() {
   Os:require "awk"
 
   case "${action,,}" in # ${action,,} = lowercase $action
-  action1)
-    #TIP: use «$script_prefix action1» to ...
-    #TIP:> $script_prefix action1
-    do_action1
+  init)
+    #TIP: use «$script_prefix init» to check/install pandoc & typst and create default config files (.env + template)
+    #TIP:> $script_prefix init
+    do_init
     ;;
 
-  action2)
-    #TIP: use «$script_prefix action2» to ...
-    #TIP:> $script_prefix action2
-    do_action2
-    ;;
-
-  action3)
-    #TIP: use «$script_prefix action3» to ...
-    #TIP:> $script_prefix action3
-    # Os:require "convert" "imagemagick"
-    # CONVERT $input $output
+  build)
+    #TIP: use «$script_prefix build» to convert a Markdown file to PDF (settings via .env)
+    #TIP:> $script_prefix build doc.md
+    #TIP:> $script_prefix build doc.md output/doc.pdf
+    do_build
     ;;
 
   check | env)
@@ -154,19 +149,132 @@ function Script:main() {
 ##                   Os:require "binary" [install_cmd], Os:tempfile [ext]
 #####################################################################
 
-function do_action1() {
-  IO:log "action1"
-  # Os:require examples: (1 arg = binary name, 2 args = binary + package/command)
-  # Os:require "ffmpeg"                                  # => brew install ffmpeg
-  # Os:require "convert" "imagemagick"                   # => brew install imagemagick
-  # Os:require "progressbar" "basher install pforret/progressbar"
-  # (code)
+function do_init() {
+  IO:log "init"
+  Tool:install "pandoc" "pandoc"
+  Tool:install "typst" "typst"
+
+  if [[ -f .env ]] && ((FORCE == 0)); then
+    IO:alert ".env already exists - use --FORCE to overwrite"
+  else
+    Env:example >.env
+    IO:success "created: .env"
+  fi
+
+  local template="${TEMPLATE:-mark-typst.template.typ}"
+  if [[ -f "$template" ]] && ((FORCE == 0)); then
+    IO:alert "$template already exists - use --FORCE to overwrite"
+  else
+    Template:default >"$template"
+    IO:success "created: $template"
+  fi
+  IO:print "$script_prefix initialized - edit .env to customize font/logo settings"
 }
 
-function do_action2() {
-  IO:log "action2"
-  # (code)
+function do_build() {
+  IO:log "build [$input] -> [$output]"
+  [[ -z "$input" ]] && IO:die "need an input file: $script_prefix build <doc.md>"
+  [[ ! -f "$input" ]] && IO:die "input file [$input] not found"
+  Os:require "pandoc"
+  Os:require "typst"
 
+  local template="${TEMPLATE:-mark-typst.template.typ}"
+  [[ ! -f "$template" ]] && IO:die "template [$template] not found - run «$script_prefix init» first"
+
+  local folder base
+  folder=$(dirname "$input")
+  base=$(basename "$input")
+  [[ "$base" == *.* ]] && base="${base%.*}"
+  [[ -z "$output" ]] && output="$folder/$base.pdf"
+  mkdir -p "$(dirname "$output")"
+
+  # intermediate .typ goes NEXT TO the input file, so relative image paths keep working
+  local typ_file="$folder/.$base.typ"
+  temp_files+=("$typ_file")
+  IO:debug "intermediate typst file: $typ_file"
+
+  local pandoc_args=(
+    -s -o "$typ_file"
+    --template="$template"
+    -V "mainfont=${FONT_BODY:-Georgia}"
+    -V "headerfont=${FONT_HEADERS:-Helvetica Neue}"
+    -V "fontsize=${FONT_SIZE:-11pt}"
+    -V "papersize=${PAPER_SIZE:-a4}"
+    -V "margin=${MARGIN:-2.5cm}"
+  )
+  [[ -n "${LOGO:-}" ]] && pandoc_args+=(-V "logo=$LOGO" -V "logo-width=${LOGO_WIDTH:-3cm}")
+  IO:debug "pandoc $input ${pandoc_args[*]}"
+  pandoc "$input" "${pandoc_args[@]}" || IO:die "pandoc conversion failed for [$input]"
+
+  local typst_args=(compile --root /)
+  [[ -n "${FONT_PATH:-}" ]] && typst_args+=(--font-path "$FONT_PATH")
+  IO:debug "typst ${typst_args[*]} $typ_file $output"
+  typst "${typst_args[@]}" "$typ_file" "$output" || IO:die "typst compilation failed for [$typ_file]"
+  IO:success "created: $output"
+}
+
+function Tool:install() {
+  # Tool:install <binary> [package] : check for binary, offer to install it if missing
+  local binary="$1"
+  local package="${2:-$1}"
+  local binary_path
+  binary_path=$(command -v "$binary" 2>/dev/null)
+  if [[ -n "$binary_path" ]]; then
+    IO:success "$binary found: $binary_path"
+    return 0
+  fi
+  IO:alert "$script_basename needs [$binary] but it cannot be found"
+  [[ -z "$install_package" ]] && IO:die "no package manager detected - install [$binary] manually"
+  if IO:confirm "Install [$binary] via '$install_package $package'?"; then
+    IO:announce "Installing [$binary] ..."
+    eval "$install_package $package" || IO:die "installation of [$binary] failed"
+    IO:success "$binary installed"
+  else
+    IO:die "cannot continue without [$binary]"
+  fi
+}
+
+function Env:example() {
+  cat <<'ENV_DEFAULTS'
+### mark-typst settings - loaded automatically by mark-typst.sh
+### font families must be installed (check with 'typst fonts')
+### e.g. Google Fonts via Homebrew: brew install --cask font-nunito
+FONT_BODY=Georgia
+FONT_HEADERS=Helvetica Neue
+FONT_SIZE=11pt
+PAPER_SIZE=a4
+MARGIN=2.5cm
+# absolute path to a logo image (png/jpg/svg), shown top-right; empty = no logo
+LOGO=
+LOGO_WIDTH=3cm
+# extra folder with .ttf/.otf fonts (optional)
+FONT_PATH=
+# pandoc -> typst template (created by 'mark-typst init')
+TEMPLATE=mark-typst.template.typ
+ENV_DEFAULTS
+}
+
+function Template:default() {
+  # pandoc template ($var$ syntax) that outputs typst markup - keep heredoc quoted!
+  cat <<'TEMPLATE_TYP'
+#let horizontalrule = line(start: (25%,0%), end: (75%,0%))
+$if(highlighting-definitions)$
+$highlighting-definitions$
+$endif$
+#set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
+#set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
+#set par(justify: true)
+#show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Helvetica Neue$endif$",), weight: "bold")
+#show raw.where(block: true): block.with(fill: luma(245), inset: 8pt, radius: 4pt, width: 100%)
+$if(logo)$
+#align(right)[#image("$logo$", width: $if(logo-width)$$logo-width$$else$3cm$endif$)]
+$endif$
+$if(title)$
+#align(center)[#text(font: ("$if(headerfont)$$headerfont$$else$Helvetica Neue$endif$",), size: 1.6em, weight: "bold")[$title$]]
+#v(1em)
+$endif$
+$body$
+TEMPLATE_TYP
 }
 
 #####################################################################
