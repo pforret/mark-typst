@@ -68,6 +68,9 @@ See [docs/examples/doc.md](docs/examples/doc.md) → [docs/examples/doc.pdf](doc
 | `LOGO`         | *(empty)*                 | absolute path to a logo image, shown top-right |
 | `LOGO_WIDTH`   | `3cm`                     | logo width                                     |
 | `COVER`        | *(empty)*                 | absolute path to a cover image, used full-bleed as the whole first page (min. 1240×1754 px for A4 @ 150 dpi, ideally 2480×3508 px @ 300 dpi) |
+| `WATERMARK_TEXT` | *(empty)*               | diagonal text in the background of every page, e.g. `Confidential` |
+| `WATERMARK_IMAGE` | *(empty)*              | absolute path to an image shown in the background of every page |
+| `WATERMARK_TRANSPARENCY` | `90%`           | how transparent the watermark is (0% = opaque, 100% = invisible) |
 | `FONT_PATH`    | *(empty)*                 | extra folder with `.ttf`/`.otf` font files     |
 | `TEMPLATE`     | `mark-typst.template.typ` | pandoc→typst template to use                   |
 

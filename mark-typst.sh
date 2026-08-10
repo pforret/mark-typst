@@ -209,6 +209,11 @@ function do_build() {
   )
   [[ -n "${LOGO:-}" ]] && pandoc_args+=(-V "logo=$LOGO" -V "logo-width=${LOGO_WIDTH:-3cm}")
   [[ -n "${COVER:-}" ]] && pandoc_args+=(-V "cover=$COVER")
+  local watermark_transparency="${WATERMARK_TRANSPARENCY:-90%}"
+  [[ "$watermark_transparency" != *% ]] && watermark_transparency="$watermark_transparency%"
+  [[ -n "${WATERMARK_TEXT:-}" ]] && pandoc_args+=(-V "watermark-text=$WATERMARK_TEXT")
+  [[ -n "${WATERMARK_IMAGE:-}" ]] && pandoc_args+=(-V "watermark-image=$WATERMARK_IMAGE")
+  pandoc_args+=(-V "watermark-transparency=$watermark_transparency")
   IO:debug "pandoc $input $(printf '%s ' "${pandoc_args[@]}")"
   pandoc "$input" "${pandoc_args[@]}" || IO:die "pandoc conversion failed for [$input]"
 
@@ -295,6 +300,12 @@ LOGO_WIDTH=3cm
 # absolute path to a cover image (png/jpg/svg), used full-bleed as the whole first page; empty = no cover
 # minimum 1240x1754 px for A4 portrait (150 dpi), recommended 2480x3508 px (300 dpi)
 COVER=
+# diagonal text shown in the background of every page, e.g. Confidential; empty = no text watermark
+WATERMARK_TEXT=
+# absolute path to an image (png/jpg/svg) shown in the background of every page; empty = no image watermark
+WATERMARK_IMAGE=
+# how transparent the watermark is: 0% = fully opaque, 100% = invisible
+WATERMARK_TRANSPARENCY=90%
 # extra folder with .ttf/.otf fonts (optional)
 FONT_PATH=
 # pandoc -> typst template (created by 'mark-typst init')
@@ -312,6 +323,19 @@ $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
+$if(watermark-image)$
+#set page(background: {
+  place(center + horizon, image("$watermark-image$", width: 100%, height: 100%, fit: "contain"))
+  place(rect(width: 100%, height: 100%, fill: white.transparentize(100% - $watermark-transparency$)))
+$if(watermark-text)$
+  place(center + horizon, rotate(-45deg, text(size: 60pt, weight: "bold", fill: luma(0).transparentize($watermark-transparency$))[$watermark-text$]))
+$endif$
+})
+$else$
+$if(watermark-text)$
+#set page(background: place(center + horizon, rotate(-45deg, text(size: 60pt, weight: "bold", fill: luma(0).transparentize($watermark-transparency$))[$watermark-text$])))
+$endif$
+$endif$
 #show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
 #show heading.where(level: 2): set block(below: 1.4em)
 #show heading.where(level: 3): set block(above: 2em)

@@ -5,6 +5,19 @@ $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
+$if(watermark-image)$
+#set page(background: {
+  place(center + horizon, image("$watermark-image$", width: 100%, height: 100%, fit: "contain"))
+  place(rect(width: 100%, height: 100%, fill: white.transparentize(100% - $watermark-transparency$)))
+$if(watermark-text)$
+  place(center + horizon, rotate(-45deg, text(size: 60pt, weight: "bold", fill: luma(0).transparentize($watermark-transparency$))[$watermark-text$]))
+$endif$
+})
+$else$
+$if(watermark-text)$
+#set page(background: place(center + horizon, rotate(-45deg, text(size: 60pt, weight: "bold", fill: luma(0).transparentize($watermark-transparency$))[$watermark-text$])))
+$endif$
+$endif$
 #show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
 #show heading.where(level: 2): set block(below: 1.4em)
 #show heading.where(level: 3): set block(above: 2em)
