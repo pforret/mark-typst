@@ -207,6 +207,7 @@ function do_build() {
     -V "margin=${MARGIN:-2.5cm}"
   )
   [[ -n "${LOGO:-}" ]] && pandoc_args+=(-V "logo=$LOGO" -V "logo-width=${LOGO_WIDTH:-3cm}")
+  [[ -n "${COVER:-}" ]] && pandoc_args+=(-V "cover=$COVER")
   IO:debug "pandoc $input $(printf '%s ' "${pandoc_args[@]}")"
   pandoc "$input" "${pandoc_args[@]}" || IO:die "pandoc conversion failed for [$input]"
 
@@ -260,6 +261,9 @@ MARGIN=2.5cm
 # absolute path to a logo image (png/jpg/svg), shown top-right; empty = no logo
 LOGO=
 LOGO_WIDTH=3cm
+# absolute path to a cover image (png/jpg/svg), used full-bleed as the whole first page; empty = no cover
+# minimum 1240x1754 px for A4 portrait (150 dpi), recommended 2480x3508 px (300 dpi)
+COVER=
 # extra folder with .ttf/.otf fonts (optional)
 FONT_PATH=
 # pandoc -> typst template (created by 'mark-typst init')
@@ -294,6 +298,12 @@ $endif$
   radius: (top-right: 4pt, bottom-right: 4pt),
   text(style: "italic", fill: luma(64), size: 0.95em)[#it.body]
 )
+$if(cover)$
+// full-bleed cover page: image should be at least 1240x1754 px for A4 portrait (150 dpi), ideally 2480x3508 px (300 dpi)
+#page(margin: 0pt)[
+  #image("$cover$", width: 100%, height: 100%, fit: "cover")
+]
+$endif$
 $if(logo)$
 #align(right)[#image("$logo$", width: $if(logo-width)$$logo-width$$else$3cm$endif$)]
 $endif$
