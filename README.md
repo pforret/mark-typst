@@ -75,7 +75,7 @@ See [docs/examples/doc.md](docs/examples/doc.md) → [docs/examples/doc.pdf](doc
 | `HEADER_LEFT` / `HEADER_CENTER` / `HEADER_RIGHT` | *(empty)* | text shown at the top of every page (left / center / right aligned) |
 | `FOOTER_LEFT` / `FOOTER_CENTER` / `FOOTER_RIGHT` | *(empty)* | text shown at the bottom of every page (left / center / right aligned) |
 | `FONT_PATH`    | *(empty)*                 | extra folder with `.ttf`/`.otf` font files     |
-| `TEMPLATE`     | `mark-typst.template.typ` | pandoc→typst template to use                   |
+| `TEMPLATE`     | *(empty)*                 | pandoc→typst template to use — empty uses the template installed with mark-typst (see [Template](#template)) |
 
 ### Fonts
 
@@ -112,11 +112,16 @@ FOOTER_RIGHT=Last update on {generated_at}
 
 `mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup.
 
-Every `build` keeps the document folder self-sufficient:
+You don't need a copy in every document folder. `build` resolves the template in this order:
+
+1. the `TEMPLATE` path from `.env`, if set (relative to the document folder, or absolute)
+2. a local `mark-typst.template.typ` in the current folder, if present (e.g. created by `mark-typst init`)
+3. otherwise the template that ships with mark-typst — used **in place** from its install folder, so nothing is copied into your document folder
+
+So the default is a single shared template. Only when you want per-document styling do you keep a local copy — run `mark-typst init` (or drop a `mark-typst.template.typ` next to your document), and it is picked up automatically. On every `build`:
 
 - no `.env` yet? one is created with default settings
-- no template yet? the default template is created
-- local template older than the one in the mark-typst repo? it is replaced (the previous version is kept as `mark-typst.template.typ.bak`, so local customizations are never lost silently)
+- a *local* template older than the one in the mark-typst install folder? it is refreshed (the previous version is kept as `mark-typst.template.typ.bak`, so local customizations are never lost silently). The shared install-folder template is never touched.
 
 The template styles:
 

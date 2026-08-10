@@ -179,7 +179,9 @@ function do_build() {
   Os:require "pandoc"
   Os:require "typst"
 
-  local template="${TEMPLATE:-mark-typst.template.typ}"
+  local template
+  template="$(Build:template)"
+  IO:debug "using template: $template"
   Build:refresh_config "$template"
 
   local folder base
@@ -254,8 +256,25 @@ function do_build() {
   fi
 }
 
+function Build:template() {
+  # Build:template : decide which pandoc -> typst template to use, without copying
+  # anything into the document folder by default:
+  #   1. $TEMPLATE from .env, if set (path, relative to the document folder or absolute)
+  #   2. a local mark-typst.template.typ in the current folder (e.g. from 'mark-typst init')
+  #   3. the template installed next to mark-typst.sh (the repo folder) - used in place
+  local name="mark-typst.template.typ"
+  if [[ -n "${TEMPLATE:-}" ]]; then
+    printf '%s' "$TEMPLATE"
+  elif [[ -f "$name" ]]; then
+    printf '%s' "$name"
+  else
+    printf '%s' "$script_install_folder/$name"
+  fi
+}
+
 function Build:refresh_config() {
-  # Build:refresh_config <template> : make sure the current folder has a .env and an up-to-date template
+  # Build:refresh_config <template> : make sure the current folder has a .env and, when a
+  # local/custom template is used, keep it up to date with the one in the mark-typst repo
   local template="$1"
   local reference_template="$script_install_folder/mark-typst.template.typ"
 
@@ -266,6 +285,10 @@ function Build:refresh_config() {
     IO:success "created: .env (default settings - edit to customize)"
   fi
 
+  # using the template installed with mark-typst directly? nothing to create, copy or refresh
+  [[ "$template" == "$reference_template" ]] && return 0
+
+  # a local/custom template that doesn't exist yet? create it from the default
   if [[ ! -f "$template" ]]; then
     Template:default >"$template"
     IO:success "created: $template"
@@ -368,8 +391,10 @@ FOOTER_CENTER=
 FOOTER_RIGHT=
 # extra folder with .ttf/.otf fonts (optional)
 FONT_PATH=
-# pandoc -> typst template (created by 'mark-typst init')
-TEMPLATE=mark-typst.template.typ
+# pandoc -> typst template. Leave empty to use the template installed with mark-typst
+# (nothing is copied into this folder). A local mark-typst.template.typ - e.g. created by
+# 'mark-typst init' - is used automatically. Set a path to force a specific template.
+TEMPLATE=
 ENV_DEFAULTS
 }
 
