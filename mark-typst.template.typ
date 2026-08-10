@@ -5,6 +5,26 @@ $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
+$if(header)$
+#set page(header: [
+  #set text(size: 0.85em, fill: luma(90))
+  #grid(columns: (1fr, 1fr, 1fr),
+    align(left)[$header-left$],
+    align(center)[$header-center$],
+    align(right)[$header-right$],
+  )
+])
+$endif$
+$if(footer)$
+#set page(footer: [
+  #set text(size: 0.85em, fill: luma(90))
+  #grid(columns: (1fr, 1fr, 1fr),
+    align(left)[$footer-left$],
+    align(center)[$footer-center$],
+    align(right)[$footer-right$],
+  )
+])
+$endif$
 $if(watermark-image)$
 #set page(background: {
   place(center + horizon, image("$watermark-image$", width: 100%, height: 100%, fit: "contain"))

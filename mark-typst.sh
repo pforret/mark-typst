@@ -106,7 +106,7 @@ function Script:main() {
 
   case "${action,,}" in # ${action,,} = lowercase $action
   init)
-    #TIP: use «$script_prefix init» to check/install pandoc & typst and create default config files (.env + template)
+    #TIP: use «$script_prefix init» to check/install pandoc & typst and create a default .env config file
     #TIP:> $script_prefix init
     do_init
     ;;
@@ -162,13 +162,8 @@ function do_init() {
     IO:success "created: .env"
   fi
 
-  local template="${TEMPLATE:-mark-typst.template.typ}"
-  if [[ -f "$template" ]] && ((FORCE == 0)); then
-    IO:alert "$template already exists - use --FORCE to overwrite"
-  else
-    Template:default >"$template"
-    IO:success "created: $template"
-  fi
+  # the .typ template is the read-only styling engine shipped with mark-typst; all styling
+  # is controlled through .env, so no template is copied into the document folder
   IO:print "$script_prefix initialized - edit .env to customize font/logo settings"
 }
 
@@ -179,8 +174,10 @@ function do_build() {
   Os:require "pandoc"
   Os:require "typst"
 
-  local template="${TEMPLATE:-mark-typst.template.typ}"
-  Build:refresh_config "$template"
+  local template
+  template="$(Build:template)"
+  IO:debug "using template: $template"
+  Build:ensure_env
 
   local folder base
   folder=$(dirname "$input")
@@ -214,6 +211,27 @@ function do_build() {
   [[ -n "${WATERMARK_TEXT:-}" ]] && pandoc_args+=(-V "watermark-text=$WATERMARK_TEXT")
   [[ -n "${WATERMARK_IMAGE:-}" ]] && pandoc_args+=(-V "watermark-image=$WATERMARK_IMAGE")
   pandoc_args+=(-V "watermark-transparency=$watermark_transparency")
+
+  # header/footer text: expand placeholders ({page}, {pages}, {author}, {date}, {generated_at})
+  local header_left header_center header_right footer_left footer_center footer_right
+  header_left="$(Build:header_footer "${HEADER_LEFT:-}")"
+  header_center="$(Build:header_footer "${HEADER_CENTER:-}")"
+  header_right="$(Build:header_footer "${HEADER_RIGHT:-}")"
+  footer_left="$(Build:header_footer "${FOOTER_LEFT:-}")"
+  footer_center="$(Build:header_footer "${FOOTER_CENTER:-}")"
+  footer_right="$(Build:header_footer "${FOOTER_RIGHT:-}")"
+  if [[ -n "$header_left$header_center$header_right" ]]; then
+    pandoc_args+=(-V "header=true"
+      -V "header-left=$header_left"
+      -V "header-center=$header_center"
+      -V "header-right=$header_right")
+  fi
+  if [[ -n "$footer_left$footer_center$footer_right" ]]; then
+    pandoc_args+=(-V "footer=true"
+      -V "footer-left=$footer_left"
+      -V "footer-center=$footer_center"
+      -V "footer-right=$footer_right")
+  fi
   IO:debug "pandoc $input $(printf '%s ' "${pandoc_args[@]}")"
   pandoc "$input" "${pandoc_args[@]}" || IO:die "pandoc conversion failed for [$input]"
 
@@ -233,32 +251,56 @@ function do_build() {
   fi
 }
 
-function Build:refresh_config() {
-  # Build:refresh_config <template> : make sure the current folder has a .env and an up-to-date template
-  local template="$1"
-  local reference_template="$script_install_folder/mark-typst.template.typ"
+function Build:template() {
+  # Build:template : which pandoc -> typst template to use. Styling is driven entirely by
+  # .env, so the .typ template is a read-only, shared styling engine - never copied into or
+  # edited inside a document folder:
+  #   - $TEMPLATE from .env, if set : your own template file (advanced, rarely needed)
+  #   - otherwise                   : the template installed with mark-typst, used in place
+  [[ -n "${TEMPLATE:-}" ]] && { printf '%s' "$TEMPLATE"; return 0; }
 
-  # no .env in this folder yet? create one with default settings
-  # (defaults were already active for this run, so no need to reload)
+  local installed="$script_install_folder/mark-typst.template.typ"
+  if [[ -f "$installed" ]]; then
+    printf '%s' "$installed"
+  else
+    # install is missing its template (unusual) - fall back to the built-in default
+    local fallback
+    fallback="$(Os:tempfile typ)"
+    Template:default >"$fallback"
+    printf '%s' "$fallback"
+  fi
+}
+
+function Build:ensure_env() {
+  # Build:ensure_env : make sure the document folder has a .env with default settings
+  # (all styling lives here; the .typ template needs no per-folder copy)
   if [[ ! -f .env && ! -f ".$script_prefix.env" && ! -f "$script_prefix.env" ]]; then
     Env:example >.env
     IO:success "created: .env (default settings - edit to customize)"
   fi
+}
 
-  if [[ ! -f "$template" ]]; then
-    Template:default >"$template"
-    IO:success "created: $template"
-    return 0
-  fi
-
-  # replace the local template when the one in the mark-typst repo is more recent
-  [[ ! -f "$reference_template" ]] && return 0
-  if [[ "$reference_template" -nt "$template" ]] && ! cmp -s "$reference_template" "$template"; then
-    cp "$template" "$template.bak"
-    cp "$reference_template" "$template"
-    IO:alert "template [$template] replaced by newer version (previous version: $template.bak)"
-  fi
-  return 0
+function Build:header_footer() {
+  # Build:header_footer <text> : expand header/footer placeholders into typst content
+  #   {page}  {pageno}    -> current page number
+  #   {pages} {pagetotal} -> total number of pages
+  #   {author}            -> AUTHOR value from .env
+  #   {date}              -> build date       (e.g. 2026-08-10)
+  #   {generated_at}      -> build date+time  (e.g. 2026-08-10 14:30)
+  # {curly} placeholders are used (not $shell) because .env values are shell-expanded on load
+  local text="$1"
+  [[ -z "$text" ]] && return 0
+  local now today
+  now="$(date '+%Y-%m-%d %H:%M')"
+  today="$(date '+%Y-%m-%d')"
+  text="${text//\{pageno\}/#context counter(page).display()}"
+  text="${text//\{page\}/#context counter(page).display()}"
+  text="${text//\{pagetotal\}/#context counter(page).final().first()}"
+  text="${text//\{pages\}/#context counter(page).final().first()}"
+  text="${text//\{generated_at\}/$now}"
+  text="${text//\{author\}/${AUTHOR:-}}"
+  text="${text//\{date\}/$today}"
+  printf '%s' "$text"
 }
 
 function Tool:install() {
@@ -306,10 +348,27 @@ WATERMARK_TEXT=
 WATERMARK_IMAGE=
 # how transparent the watermark is: 0% = fully opaque, 100% = invisible
 WATERMARK_TRANSPARENCY=90%
+# author name (used by the {author} placeholder in the header/footer text below)
+AUTHOR=
+# header & footer text, shown on every page (leave all empty = no header/footer)
+# each has a left / center / right slot; mix plain text with these placeholders:
+#   {page}  {pageno}     -> current page number
+#   {pages} {pagetotal}  -> total number of pages
+#   {author}             -> AUTHOR value above
+#   {date}               -> build date      (e.g. 2026-08-10)
+#   {generated_at}       -> build date+time (e.g. 2026-08-10 14:30)
+# examples: FOOTER_CENTER=page {page} of {pages}   FOOTER_RIGHT=Last update on {generated_at}
+HEADER_LEFT=
+HEADER_CENTER=
+HEADER_RIGHT=
+FOOTER_LEFT=
+FOOTER_CENTER=
+FOOTER_RIGHT=
 # extra folder with .ttf/.otf fonts (optional)
 FONT_PATH=
-# pandoc -> typst template (created by 'mark-typst init')
-TEMPLATE=mark-typst.template.typ
+# advanced: path to your own pandoc -> typst template. Leave empty to use the read-only
+# template that ships with mark-typst (all styling is controlled through the settings above).
+TEMPLATE=
 ENV_DEFAULTS
 }
 
@@ -323,6 +382,26 @@ $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
+$if(header)$
+#set page(header: [
+  #set text(size: 0.85em, fill: luma(90))
+  #grid(columns: (1fr, 1fr, 1fr),
+    align(left)[$header-left$],
+    align(center)[$header-center$],
+    align(right)[$header-right$],
+  )
+])
+$endif$
+$if(footer)$
+#set page(footer: [
+  #set text(size: 0.85em, fill: luma(90))
+  #grid(columns: (1fr, 1fr, 1fr),
+    align(left)[$footer-left$],
+    align(center)[$footer-center$],
+    align(right)[$footer-right$],
+  )
+])
+$endif$
 $if(watermark-image)$
 #set page(background: {
   place(center + horizon, image("$watermark-image$", width: 100%, height: 100%, fit: "contain"))

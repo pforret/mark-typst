@@ -38,7 +38,7 @@ Flags, options and parameters:
 ### Getting started
 
 ```bash
-# one-time setup: checks/installs pandoc & typst, creates .env + template
+# one-time setup: checks/installs pandoc & typst, creates a default .env
 mark-typst init
 
 # convert doc.md to doc.pdf (same folder)
@@ -71,8 +71,11 @@ See [docs/examples/doc.md](docs/examples/doc.md) → [docs/examples/doc.pdf](doc
 | `WATERMARK_TEXT` | *(empty)*               | diagonal text in the background of every page, e.g. `Confidential` |
 | `WATERMARK_IMAGE` | *(empty)*              | absolute path to an image shown in the background of every page |
 | `WATERMARK_TRANSPARENCY` | `90%`           | how transparent the watermark is (0% = opaque, 100% = invisible) |
+| `AUTHOR`       | *(empty)*                 | author name, available as the `{author}` placeholder in headers/footers |
+| `HEADER_LEFT` / `HEADER_CENTER` / `HEADER_RIGHT` | *(empty)* | text shown at the top of every page (left / center / right aligned) |
+| `FOOTER_LEFT` / `FOOTER_CENTER` / `FOOTER_RIGHT` | *(empty)* | text shown at the bottom of every page (left / center / right aligned) |
 | `FONT_PATH`    | *(empty)*                 | extra folder with `.ttf`/`.otf` font files     |
-| `TEMPLATE`     | `mark-typst.template.typ` | pandoc→typst template to use                   |
+| `TEMPLATE`     | *(empty)*                 | *advanced* — path to your own template; empty uses the one shipped with mark-typst (see [Template](#template)) |
 
 ### Fonts
 
@@ -82,15 +85,32 @@ Typst uses the **font family name** (not the file name) of any font installed on
 - Google Fonts via Homebrew: `brew install --cask font-nunito`
 - Or drop `.ttf`/`.otf` files in a folder and point `FONT_PATH` to it, e.g. `FONT_HEADERS="Days One"` + `FONT_PATH=./ttf`
 
+### Headers & footers
+
+Add running text to the top (`HEADER_*`) and/or bottom (`FOOTER_*`) of every page. Each edge has three independently aligned slots — `_LEFT`, `_CENTER` and `_RIGHT` — so you can put an author on one side and page numbers on the other. Leave them all empty (the default) for no header/footer.
+
+Slots mix plain text with these placeholders:
+
+| Placeholder                | Expands to                          |
+|----------------------------|-------------------------------------|
+| `{page}` / `{pageno}`      | current page number                 |
+| `{pages}` / `{pagetotal}`  | total number of pages               |
+| `{author}`                 | the `AUTHOR` value from `.env`      |
+| `{date}`                   | build date, e.g. `2026-08-10`       |
+| `{generated_at}`           | build date + time, e.g. `2026-08-10 14:30` |
+
+```ini
+AUTHOR=Peter Forret
+FOOTER_LEFT={author}
+FOOTER_CENTER=page {page} of {pages}
+FOOTER_RIGHT=Last update on {generated_at}
+```
+
+> Placeholders use `{curly}` braces (not `$shell` style) because `.env` values are read by the shell, which would otherwise try to expand `$name` itself.
+
 ### Template
 
-`mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup.
-
-Every `build` keeps the document folder self-sufficient:
-
-- no `.env` yet? one is created with default settings
-- no template yet? the default template is created
-- local template older than the one in the mark-typst repo? it is replaced (the previous version is kept as `mark-typst.template.typ.bak`, so local customizations are never lost silently)
+`mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup. It is the **read-only styling engine** shipped with mark-typst — all styling is controlled through your `.env`, so you never edit or copy the template yourself. Every `build` uses the shared template in place from the mark-typst install folder; nothing is written into your document folder except the PDF (and a default `.env` the first time, if you don't have one).
 
 The template styles:
 
@@ -100,8 +120,9 @@ The template styles:
 - blockquotes with a steel-blue accent bar, soft background and italic text
 - tables with light gray borders
 - optional logo in the top-right corner
+- optional running header/footer with per-side alignment and page numbers
 
-Edit it freely — it is yours after `init`. Re-running `init` never overwrites existing files unless you pass `--FORCE` (which also resets `.env`).
+To restyle beyond what `.env` exposes, either edit the template in the mark-typst install folder (it applies to every document), or copy it somewhere, adapt it, and point `TEMPLATE` at your copy in `.env`.
 
 ## Markdown support
 
