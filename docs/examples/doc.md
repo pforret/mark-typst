@@ -4,7 +4,7 @@ title: MarkTypst Sample Document
 
 *Generated with `mark-typst build doc.md` — Markdown → pandoc → typst → PDF.*
 
-## Typography
+### Typography
 
 Body text is set in **Georgia** (serif), headers in **Impact** (sans-serif) —
 both standard macOS fonts; swap in any installed font (e.g. from
@@ -17,14 +17,14 @@ footnotes[^1] freely.
 > Blockquotes work too: "Typst compiles in milliseconds, pandoc speaks
 > every Markdown dialect — together they make beautiful PDFs."
 
-## Lists
+### Lists
 
 1. Ordered lists
 2. With multiple items
    - and nested bullets
    - like this one
 
-## Code
+### Code
 
 ```bash
 # syntax highlighting comes from pandoc
@@ -32,7 +32,7 @@ mark-typst init          # install tools + create .env & template
 mark-typst build doc.md  # → doc.pdf in the same folder
 ```
 
-## Tables
+### Tables
 
 | Setting     | .env variable  | Default        |
 |-------------|----------------|----------------|
@@ -42,7 +42,7 @@ mark-typst build doc.md  # → doc.pdf in the same folder
 | Paper       | `PAPER_SIZE`   | a4             |
 | Logo        | `LOGO`         | *(empty)*      |
 
-## Math & more
+### Math & more
 
 Inline math like $E = mc^2$ and display math:
 

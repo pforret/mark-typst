@@ -197,6 +197,9 @@ function do_build() {
   local pandoc_args=(
     -s -o "$typ_file"
     --template="$template"
+    --columns=999
+    # --columns=999: keep table columns 'auto' so typst sizes them by content;
+    # otherwise pandoc derives widths from source char counts and narrow columns overflow
     -V "mainfont=${FONT_BODY:-Georgia}"
     -V "headerfont=${FONT_HEADERS:-Impact}"
     -V "fontsize=${FONT_SIZE:-11pt}"
@@ -275,6 +278,10 @@ $endif$
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true)
 #show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
+#show heading.where(level: 2): it => {
+  pagebreak(weak: true)
+  it
+}
 #show raw: set text(size: 0.85em)
 #show raw.where(block: true): block.with(fill: luma(245), inset: 8pt, radius: 4pt, width: 100%)
 #set table(inset: 6pt, stroke: 0.5pt + luma(200))
@@ -292,6 +299,10 @@ $if(logo)$
 $endif$
 $if(title)$
 #align(center)[#text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), size: 1.6em, weight: "bold")[$title$]]
+#v(1em)
+$endif$
+$if(toc)$
+#outline(title: auto, depth: $if(toc-depth)$$toc-depth$$else$3$endif$)
 #v(1em)
 $endif$
 $body$

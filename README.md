@@ -80,6 +80,7 @@ Typst uses the **font family name** (not the file name) of any font installed on
 `mark-typst.template.typ` is a [pandoc template](https://pandoc.org/MANUAL.html#templates) that emits [typst](https://typst.app/docs) markup. It styles:
 
 - title (from YAML frontmatter `title:`) and headings in `FONT_HEADERS`, bold
+- every `##` (H2) section starts on a new page (assumes a single `#` H1 per document)
 - syntax-highlighted code blocks on a light gray panel, code at 0.85em
 - blockquotes with a steel-blue accent bar, soft background and italic text
 - tables with light gray borders
@@ -94,6 +95,8 @@ Everything pandoc understands: headings, emphasis, code blocks with syntax highl
 ```yaml
 ---
 title: My Document        # rendered as centered title
+toc: true                 # automatic table of contents ("Contents")
+toc-depth: 2              # optional: heading levels to include (default 3)
 ---
 ```
 
