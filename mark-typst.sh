@@ -214,6 +214,27 @@ function do_build() {
   [[ -n "${WATERMARK_TEXT:-}" ]] && pandoc_args+=(-V "watermark-text=$WATERMARK_TEXT")
   [[ -n "${WATERMARK_IMAGE:-}" ]] && pandoc_args+=(-V "watermark-image=$WATERMARK_IMAGE")
   pandoc_args+=(-V "watermark-transparency=$watermark_transparency")
+
+  # header/footer text: expand placeholders ({page}, {pages}, {author}, {date}, {generated_at})
+  local header_left header_center header_right footer_left footer_center footer_right
+  header_left="$(Build:header_footer "${HEADER_LEFT:-}")"
+  header_center="$(Build:header_footer "${HEADER_CENTER:-}")"
+  header_right="$(Build:header_footer "${HEADER_RIGHT:-}")"
+  footer_left="$(Build:header_footer "${FOOTER_LEFT:-}")"
+  footer_center="$(Build:header_footer "${FOOTER_CENTER:-}")"
+  footer_right="$(Build:header_footer "${FOOTER_RIGHT:-}")"
+  if [[ -n "$header_left$header_center$header_right" ]]; then
+    pandoc_args+=(-V "header=true"
+      -V "header-left=$header_left"
+      -V "header-center=$header_center"
+      -V "header-right=$header_right")
+  fi
+  if [[ -n "$footer_left$footer_center$footer_right" ]]; then
+    pandoc_args+=(-V "footer=true"
+      -V "footer-left=$footer_left"
+      -V "footer-center=$footer_center"
+      -V "footer-right=$footer_right")
+  fi
   IO:debug "pandoc $input $(printf '%s ' "${pandoc_args[@]}")"
   pandoc "$input" "${pandoc_args[@]}" || IO:die "pandoc conversion failed for [$input]"
 
@@ -261,6 +282,29 @@ function Build:refresh_config() {
   return 0
 }
 
+function Build:header_footer() {
+  # Build:header_footer <text> : expand header/footer placeholders into typst content
+  #   {page}  {pageno}    -> current page number
+  #   {pages} {pagetotal} -> total number of pages
+  #   {author}            -> AUTHOR value from .env
+  #   {date}              -> build date       (e.g. 2026-08-10)
+  #   {generated_at}      -> build date+time  (e.g. 2026-08-10 14:30)
+  # {curly} placeholders are used (not $shell) because .env values are shell-expanded on load
+  local text="$1"
+  [[ -z "$text" ]] && return 0
+  local now today
+  now="$(date '+%Y-%m-%d %H:%M')"
+  today="$(date '+%Y-%m-%d')"
+  text="${text//\{pageno\}/#context counter(page).display()}"
+  text="${text//\{page\}/#context counter(page).display()}"
+  text="${text//\{pagetotal\}/#context counter(page).final().first()}"
+  text="${text//\{pages\}/#context counter(page).final().first()}"
+  text="${text//\{generated_at\}/$now}"
+  text="${text//\{author\}/${AUTHOR:-}}"
+  text="${text//\{date\}/$today}"
+  printf '%s' "$text"
+}
+
 function Tool:install() {
   # Tool:install <binary> [package] : check for binary, offer to install it if missing
   local binary="$1"
@@ -306,6 +350,22 @@ WATERMARK_TEXT=
 WATERMARK_IMAGE=
 # how transparent the watermark is: 0% = fully opaque, 100% = invisible
 WATERMARK_TRANSPARENCY=90%
+# author name (used by the {author} placeholder in the header/footer text below)
+AUTHOR=
+# header & footer text, shown on every page (leave all empty = no header/footer)
+# each has a left / center / right slot; mix plain text with these placeholders:
+#   {page}  {pageno}     -> current page number
+#   {pages} {pagetotal}  -> total number of pages
+#   {author}             -> AUTHOR value above
+#   {date}               -> build date      (e.g. 2026-08-10)
+#   {generated_at}       -> build date+time (e.g. 2026-08-10 14:30)
+# examples: FOOTER_CENTER=page {page} of {pages}   FOOTER_RIGHT=Last update on {generated_at}
+HEADER_LEFT=
+HEADER_CENTER=
+HEADER_RIGHT=
+FOOTER_LEFT=
+FOOTER_CENTER=
+FOOTER_RIGHT=
 # extra folder with .ttf/.otf fonts (optional)
 FONT_PATH=
 # pandoc -> typst template (created by 'mark-typst init')
@@ -323,6 +383,26 @@ $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
+$if(header)$
+#set page(header: [
+  #set text(size: 0.85em, fill: luma(90))
+  #grid(columns: (1fr, 1fr, 1fr),
+    align(left)[$header-left$],
+    align(center)[$header-center$],
+    align(right)[$header-right$],
+  )
+])
+$endif$
+$if(footer)$
+#set page(footer: [
+  #set text(size: 0.85em, fill: luma(90))
+  #grid(columns: (1fr, 1fr, 1fr),
+    align(left)[$footer-left$],
+    align(center)[$footer-center$],
+    align(right)[$footer-right$],
+  )
+])
+$endif$
 $if(watermark-image)$
 #set page(background: {
   place(center + horizon, image("$watermark-image$", width: 100%, height: 100%, fit: "contain"))
