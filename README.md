@@ -62,6 +62,7 @@ See [docs/examples/doc.md](docs/examples/doc.md) → [docs/examples/doc.pdf](doc
 | `FONT_BODY`    | `Georgia`                 | body text font family (serif)                  |
 | `FONT_HEADERS` | `Impact`                  | headings + title font family (sans-serif)      |
 | `FONT_SIZE`    | `11pt`                    | base font size (needs a unit)                  |
+| `LINE_SPACING` | `0.8em`                   | space between two lines (typst default: `0.65em`) |
 | `PAPER_SIZE`   | `a4`                      | typst paper size (`a4`, `us-letter`, …)        |
 | `MARGIN`       | `2.5cm`                   | page margin                                    |
 | `LOGO`         | *(empty)*                 | absolute path to a logo image, shown top-right |

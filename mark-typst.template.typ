@@ -4,7 +4,7 @@ $highlighting-definitions$
 $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
-#set par(justify: true)
+#set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
 #show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
 #show heading.where(level: 2): it => {
   pagebreak(weak: true)

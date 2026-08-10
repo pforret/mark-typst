@@ -203,6 +203,7 @@ function do_build() {
     -V "mainfont=${FONT_BODY:-Georgia}"
     -V "headerfont=${FONT_HEADERS:-Impact}"
     -V "fontsize=${FONT_SIZE:-11pt}"
+    -V "line-spacing=${LINE_SPACING:-0.8em}"
     -V "papersize=${PAPER_SIZE:-a4}"
     -V "margin=${MARGIN:-2.5cm}"
   )
@@ -284,6 +285,8 @@ function Env:example() {
 FONT_BODY=Georgia
 FONT_HEADERS=Impact
 FONT_SIZE=11pt
+# space between two lines of text (typst default is 0.65em)
+LINE_SPACING=0.8em
 PAPER_SIZE=a4
 MARGIN=2.5cm
 # absolute path to a logo image (png/jpg/svg), shown top-right; empty = no logo
@@ -308,7 +311,7 @@ $highlighting-definitions$
 $endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
 #set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
-#set par(justify: true)
+#set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
 #show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
 #show heading.where(level: 2): it => {
   pagebreak(weak: true)
