@@ -6,6 +6,8 @@
 
 **Generate beautiful PDFs from Markdown sources**, using [pandoc](https://pandoc.org) and [typst](https://typst.app).
 
+![](assets/mark-typst.png)
+
 Markdown goes in, a styled PDF comes out — fonts, logo, paper size and margins configured once in a `.env` file. Typst compiles in milliseconds, pandoc speaks every Markdown dialect: together they make beautiful PDFs.
 
 ```
