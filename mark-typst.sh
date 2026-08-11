@@ -280,6 +280,26 @@ function Build:ensure_env() {
   fi
 }
 
+function Env:sync() {
+  # Env:sync : append settings that exist in the repo's .env.example but not yet in the
+  # local .env, so existing .env files automatically pick up newly added configuration keys
+  local example="$script_install_folder/.env.example"
+  local env_file="./.env"
+  [[ -f "$example" && -f "$env_file" ]] || return 0
+  local line key added=0
+  while IFS= read -r line; do
+    [[ "$line" =~ ^[[:space:]]*([A-Za-z_][A-Za-z0-9_]*)= ]] || continue
+    key="${BASH_REMATCH[1]}"
+    if ! grep -q "^[[:space:]]*${key}=" "$env_file"; then
+      printf '%s\n' "$line" >>"$env_file"
+      IO:debug "$config_icon added missing setting to .env: $line"
+      ((added++))
+    fi
+  done <"$example"
+  ((added)) && IO:alert "added $added new setting(s) from .env.example to $env_file"
+  return 0
+}
+
 function Build:header_footer() {
   # Build:header_footer <text> : expand header/footer placeholders into typst content
   #   {page}  {pageno}    -> current page number
@@ -1409,6 +1429,7 @@ Script:meta   # find installation folder
 [[ $run_as_root == -1 ]] && [[ $UID -eq 0 ]] && IO:die "user is $USER, CANNOT be root to run [$script_basename]"
 
 Option:initialize # set default values for flags & options
+Env:sync          # add new settings from .env.example to the local .env
 Os:import_env     # load .env, .<prefix>.env, <prefix>.env (script folder + cwd)
 
 if [[ $sourced -eq 0 ]]; then
