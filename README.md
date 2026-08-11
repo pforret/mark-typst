@@ -4,6 +4,12 @@
 ![shellcheck](https://img.shields.io/badge/shellcheck-clean-brightgreen)
 ![bashew](https://img.shields.io/badge/framework-bashew-blue)
 
+[![GitHub stars](https://img.shields.io/github/stars/pforret/mark-typst?style=flat&logo=github)](https://github.com/pforret/mark-typst/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/pforret/mark-typst?style=flat&logo=github)](https://github.com/pforret/mark-typst/network/members)
+[![GitHub watchers](https://img.shields.io/github/watchers/pforret/mark-typst?style=flat&logo=github)](https://github.com/pforret/mark-typst/watchers)
+[![GitHub issues](https://img.shields.io/github/issues/pforret/mark-typst?logo=github)](https://github.com/pforret/mark-typst/issues)
+[![Last commit](https://img.shields.io/github/last-commit/pforret/mark-typst?logo=github)](https://github.com/pforret/mark-typst/commits/main)
+
 **Generate beautiful PDFs from Markdown sources**, using [pandoc](https://pandoc.org) and [typst](https://typst.app).
 
 ![](assets/mark-typst.png)
@@ -57,25 +63,25 @@ See [docs/examples/doc.md](docs/examples/doc.md) → [docs/examples/doc.pdf](doc
 
 `mark-typst init` creates a `.env` file next to your documents. It is loaded automatically on every run ([bashew](https://github.com/pforret/bashew) dotenv support).
 
-| Setting        | Default                   | Purpose                                        |
-|----------------|---------------------------|------------------------------------------------|
-| `FONT_BODY`    | `Georgia`                 | body text font family (serif)                  |
-| `FONT_HEADERS` | `Impact`                  | headings + title font family (sans-serif)      |
-| `FONT_SIZE`    | `11pt`                    | base font size (needs a unit)                  |
-| `LINE_SPACING` | `0.8em`                   | space between two lines (typst default: `0.65em`) |
-| `PAPER_SIZE`   | `a4`                      | typst paper size (`a4`, `us-letter`, …)        |
-| `MARGIN`       | `2.5cm`                   | page margin                                    |
-| `LOGO`         | *(empty)*                 | absolute path to a logo image, shown top-right |
-| `LOGO_WIDTH`   | `3cm`                     | logo width                                     |
-| `COVER`        | *(empty)*                 | absolute path to a cover image, used full-bleed as the whole first page (min. 1240×1754 px for A4 @ 150 dpi, ideally 2480×3508 px @ 300 dpi) |
-| `WATERMARK_TEXT` | *(empty)*               | diagonal text in the background of every page, e.g. `Confidential` |
-| `WATERMARK_IMAGE` | *(empty)*              | absolute path to an image shown in the background of every page |
-| `WATERMARK_TRANSPARENCY` | `90%`           | how transparent the watermark is (0% = opaque, 100% = invisible) |
-| `AUTHOR`       | *(empty)*                 | author name, available as the `{author}` placeholder in headers/footers |
-| `HEADER_LEFT` / `HEADER_CENTER` / `HEADER_RIGHT` | *(empty)* | text shown at the top of every page (left / center / right aligned) |
-| `FOOTER_LEFT` / `FOOTER_CENTER` / `FOOTER_RIGHT` | *(empty)* | text shown at the bottom of every page (left / center / right aligned) |
-| `FONT_PATH`    | *(empty)*                 | extra folder with `.ttf`/`.otf` font files     |
-| `TEMPLATE`     | *(empty)*                 | *advanced* — path to your own template; empty uses the one shipped with mark-typst (see [Template](#template)) |
+| Setting                                          | Default   | Purpose                                                                                                                                      |
+|--------------------------------------------------|-----------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `FONT_BODY`                                      | `Georgia` | body text font family (serif)                                                                                                                |
+| `FONT_HEADERS`                                   | `Impact`  | headings + title font family (sans-serif)                                                                                                    |
+| `FONT_SIZE`                                      | `11pt`    | base font size (needs a unit)                                                                                                                |
+| `LINE_SPACING`                                   | `0.8em`   | space between two lines (typst default: `0.65em`)                                                                                            |
+| `PAPER_SIZE`                                     | `a4`      | typst paper size (`a4`, `us-letter`, …)                                                                                                      |
+| `MARGIN`                                         | `2.5cm`   | page margin                                                                                                                                  |
+| `LOGO`                                           | *(empty)* | absolute path to a logo image, shown top-right                                                                                               |
+| `LOGO_WIDTH`                                     | `3cm`     | logo width                                                                                                                                   |
+| `COVER`                                          | *(empty)* | absolute path to a cover image, used full-bleed as the whole first page (min. 1240×1754 px for A4 @ 150 dpi, ideally 2480×3508 px @ 300 dpi) |
+| `WATERMARK_TEXT`                                 | *(empty)* | diagonal text in the background of every page, e.g. `Confidential`                                                                           |
+| `WATERMARK_IMAGE`                                | *(empty)* | absolute path to an image shown in the background of every page                                                                              |
+| `WATERMARK_TRANSPARENCY`                         | `90%`     | how transparent the watermark is (0% = opaque, 100% = invisible)                                                                             |
+| `AUTHOR`                                         | *(empty)* | author name, available as the `{author}` placeholder in headers/footers                                                                      |
+| `HEADER_LEFT` / `HEADER_CENTER` / `HEADER_RIGHT` | *(empty)* | text shown at the top of every page (left / center / right aligned)                                                                          |
+| `FOOTER_LEFT` / `FOOTER_CENTER` / `FOOTER_RIGHT` | *(empty)* | text shown at the bottom of every page (left / center / right aligned)                                                                       |
+| `FONT_PATH`                                      | *(empty)* | extra folder with `.ttf`/`.otf` font files                                                                                                   |
+| `TEMPLATE`                                       | *(empty)* | *advanced* — path to your own template; empty uses the one shipped with mark-typst (see [Template](#template))                               |
 
 ### Fonts
 
@@ -91,13 +97,13 @@ Add running text to the top (`HEADER_*`) and/or bottom (`FOOTER_*`) of every pag
 
 Slots mix plain text with these placeholders:
 
-| Placeholder                | Expands to                          |
-|----------------------------|-------------------------------------|
-| `{page}` / `{pageno}`      | current page number                 |
-| `{pages}` / `{pagetotal}`  | total number of pages               |
-| `{author}`                 | the `AUTHOR` value from `.env`      |
-| `{date}`                   | build date, e.g. `2026-08-10`       |
-| `{generated_at}`           | build date + time, e.g. `2026-08-10 14:30` |
+| Placeholder               | Expands to                                 |
+|---------------------------|--------------------------------------------|
+| `{page}` / `{pageno}`     | current page number                        |
+| `{pages}` / `{pagetotal}` | total number of pages                      |
+| `{author}`                | the `AUTHOR` value from `.env`             |
+| `{date}`                  | build date, e.g. `2026-08-10`              |
+| `{generated_at}`          | build date + time, e.g. `2026-08-10 14:30` |
 
 ```ini
 AUTHOR=Peter Forret
