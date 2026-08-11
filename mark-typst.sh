@@ -256,8 +256,18 @@ function Build:template() {
   # .env, so the .typ template is a read-only, shared styling engine - never copied into or
   # edited inside a document folder:
   #   - $TEMPLATE from .env, if set : your own template file (advanced, rarely needed)
+  #     (a relative path is also looked up under $script_install_folder)
   #   - otherwise                   : the template installed with mark-typst, used in place
-  [[ -n "${TEMPLATE:-}" ]] && { printf '%s' "$TEMPLATE"; return 0; }
+  if [[ -n "${TEMPLATE:-}" ]]; then
+    if [[ -f "$TEMPLATE" ]]; then
+      printf '%s' "$TEMPLATE"
+      return 0
+    elif [[ -f "$script_install_folder/$TEMPLATE" ]]; then
+      printf '%s' "$script_install_folder/$TEMPLATE"
+      return 0
+    fi
+    IO:alert "TEMPLATE [$TEMPLATE] not found - using installed template"
+  fi
 
   local installed="$script_install_folder/mark-typst.template.typ"
   if [[ -f "$installed" ]]; then
