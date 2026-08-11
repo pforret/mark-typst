@@ -47,7 +47,12 @@ $endif$
 }
 #show raw: set text(size: 0.85em)
 #show raw.where(block: true): block.with(fill: luma(245), inset: 8pt, radius: 4pt, width: 100%)
-#set table(inset: 6pt, stroke: 0.5pt + luma(200))
+// tables: no justify (negative word-spacing garbles narrow cells), smaller text +
+// hyphenation so wide tables fit the page, breakable so long tables span pages
+#show figure: set block(breakable: true)
+#show table: set par(justify: false)
+#show table: set text(size: 0.85em, hyphenate: true)
+#set table(inset: 5pt, stroke: 0.5pt + luma(200))
 #set table.hline(stroke: 0.75pt + luma(160))
 #show quote.where(block: true): it => block(
   width: 100%,
