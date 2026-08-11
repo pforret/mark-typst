@@ -2,8 +2,9 @@
 $if(highlighting-definitions)$
 $highlighting-definitions$
 $endif$
+#let base-size = $if(fontsize)$$fontsize$$else$11pt$endif$
 #set page(paper: "$if(papersize)$$papersize$$else$a4$endif$", margin: $if(margin)$$margin$$else$2.5cm$endif$)
-#set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: $if(fontsize)$$fontsize$$else$11pt$endif$)
+#set text(font: ("$if(mainfont)$$mainfont$$else$Georgia$endif$",), size: base-size)
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
 $if(header)$
 #set page(header: [
@@ -39,8 +40,23 @@ $if(watermark-text)$
 $endif$
 $endif$
 #show heading: set text(font: ("$if(headerfont)$$headerfont$$else$Impact$endif$",), weight: "bold")
-#show heading.where(level: 2): set block(below: 1.4em)
-#show heading.where(level: 3): set block(above: 2em)
+// typst's built-in heading scale stops at level 2: level 3 and deeper all get 1em, so ###
+// and #### come out the same size. give every level its own size (~1.15 ratio per step)
+// and its own spacing, so the hierarchy is visible down to level 6.
+#show heading.where(level: 1): set text(size: 1.50 * base-size)
+#show heading.where(level: 2): set text(size: 1.30 * base-size)
+#show heading.where(level: 3): set text(size: 1.15 * base-size)
+#show heading.where(level: 4): set text(size: 1.00 * base-size)
+#show heading.where(level: 5): set text(size: 0.90 * base-size)
+#show heading.where(level: 6): set text(size: 0.85 * base-size, fill: luma(70))
+// spacing in base-size units, not em: em would shrink along with the heading font and the
+// deeper levels would end up glued to the text above them
+#show heading.where(level: 1): set block(above: 2.2 * base-size, below: 1.2 * base-size)
+#show heading.where(level: 2): set block(above: 2.2 * base-size, below: 1.4 * base-size)
+#show heading.where(level: 3): set block(above: 2.0 * base-size, below: 1.0 * base-size)
+#show heading.where(level: 4): set block(above: 1.7 * base-size, below: 0.8 * base-size)
+#show heading.where(level: 5): set block(above: 1.5 * base-size, below: 0.7 * base-size)
+#show heading.where(level: 6): set block(above: 1.4 * base-size, below: 0.6 * base-size)
 #show heading.where(level: 2): it => {
   pagebreak(weak: true)
   it

@@ -121,6 +121,7 @@ FOOTER_RIGHT=Last update on {generated_at}
 The template styles:
 
 - title (from YAML frontmatter `title:`) and headings in `FONT_HEADERS`, bold
+- every heading level has its own size, relative to `FONT_SIZE`: `#` 1.50× · `##` 1.30× · `###` 1.15× · `####` 1.00× · `#####` 0.90× · `######` 0.85× (gray) — typst's own scale gives every level below `##` the same size, so `###` and `####` would otherwise look identical
 - every `##` (H2) section starts on a new page (assumes a single `#` H1 per document)
 - syntax-highlighted code blocks on a light gray panel, code at 0.85em
 - blockquotes with a steel-blue accent bar, soft background and italic text
