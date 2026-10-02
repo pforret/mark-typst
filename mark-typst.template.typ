@@ -8,7 +8,7 @@ $endif$
 #set par(justify: true, leading: $if(line-spacing)$$line-spacing$$else$0.8em$endif$)
 $if(header)$
 #set page(header: [
-  #set text(size: 0.85em, fill: luma(90))
+  #set text(size: 0.75em, weight: "bold", fill: luma(90))
   #grid(columns: (1fr, 1fr, 1fr),
     align(left)[$header-left$],
     align(center)[$header-center$],
@@ -18,7 +18,7 @@ $if(header)$
 $endif$
 $if(footer)$
 #set page(footer: [
-  #set text(size: 0.85em, fill: luma(90))
+  #set text(size: 0.75em, weight: "bold", fill: luma(90))
   #grid(columns: (1fr, 1fr, 1fr),
     align(left)[$footer-left$],
     align(center)[$footer-center$],
